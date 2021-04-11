@@ -1,0 +1,439 @@
+---
+title: "What are the contributing factors for Log GDP?"
+author: "Amber Shao, Haotian Li, Jiaxuan Li, Roxie Wei, Yike Chen"
+date: "12/9/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+```
+
+### Introduction
+
+According to the definition published by International Monetary Fund, Gross Domestic Product (abbreviated as GDP) is a measurement of a country's monetary value of final goods and services produced within its for a given time. Compared to its numerical value, the growth rate of GDP seems more important because it could provide not only a horizontal comparison with other country's economic status but also a vertical comparison for its own economy. Thus, this commonly used index, Log(GDP), has been considered as "one of the most important indicators of the general health of the economy". Owing to its significance, our group decided to analyze the Log GDP value of 120 countries in 2018 provided by the World Bank and all the possible factors that affect these values. Among all the aspects we explored, we find several promising factors that may impact the Log GDP: the country’s population, geographic location, labor, and people’s life expectancy of the country. 
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+worldbank2018 <- read.csv('world_bank_2018.csv')
+#worldbank2018
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#Add geographic information to the data frame. 
+continent <- c('Asia','Europe','Africa','South America','Oceania','Europe','Asia','Oceania','North America','Asia','Europe','Asia','Africa','South America','South America','Europe','Africa','Asia','North America','Africa','Africa','Africa','South America','Europe','Europe','Africa','Africa','South America','Europe','Europe','Africa','South America','Europe','Africa','Asia','Africa','Africa','Europe','Europe','North America','North America','Europe','Europe','Asia','Oceania','North America','Europe','Asia','Europe','Europe','Europe','Asia','Africa','Asia','Asia','North America','Asia','Africa','Asia','North America','Europe','Asia','Oceania','Africa','Asia','Asia','North America','South America','Europe','Europe','Africa','Oceania','Asia','Asia','Asia','Africa','Europe','South America','Europe','Asia','Africa','Asia','Africa','Asia','Africa','Europe','Asia','Asia','Asia','South America','South America','Africa','North America','Europe','Europe','Asia','Asia','Europe','Africa','South America','Europe','Africa','Asia','Europe','Europe','Europe','Europe','Asia','Asia','Africa','Africa','Asia','Asia','Asia','Asia','North America','Oceania','North America','Asia','Oceania')
+worldbank_continent <- mutate(worldbank2018, continent)
+#worldbank_continent
+```
+
+### Exploratory Data Analysis:
+
+During the data exploration stage, we are finding our general exploratory directions by trying to answer the following questions.
+ 
+ 1. What topic in general are we looking at? GDP? Environmental protection? Living Standard? 
+ 2. What may be a contributing factor of the topic we want to discuss? what problem may we meet? How do we solve it?
+ 3. To what extent do demographic impact a country's GDP?
+ 4. Can we measure one country's economy by any indicator? If so, do we have it in the graph or we need multiple steps of calculation to obtain it using the data we have?
+ 5. Are there any bias/influential aspects in the responses that could skew data? If so, among them, which has the comparatively the most impact on the data? 
+ 6. What is the relationship between certain variables?
+ 
+After carefully explore the data, we finally set our topic to be GDP and here are the variabled chosen for our specific and detailed exploration graphics. 
+
+ - GDP (Quantitative): As mentioned in introduction, GDP measures a country's monetary value of final goods and services produced for year 2018. This data is given by the world bank data in the column called GDP. However, since we interest in the average GDP for each continent and in the growth rate, we have two other aggregated data from the GDP column.
+```{r fig.align ='center',echo = FALSE, message = FALSE, warning = FALSE}
+summary(worldbank_continent$GDP) 
+``` 
+ - Continent (Qualitative): This variable contains the geographic information for each country. For example, United States locates in North America Continent. Therefore, it is labeled North America in the Continent column. Since this piece of information is not provided by the World bank, we collected information from United Nation and use it to conduct further explorations. There are six continents in total, which is shown in the chart below
+
+ - Average GDP (Quantitative): This variable measures the average GDP for each continent. We obtain this data by first filter out the GDP for each continent. In this process, there are few countries that do not have GDP so we use na.rm to remove them. Then, we find the mean of GDPs for each continent. The data is presented below. Among all six continents, North America has the highest average GDP while Africa has the least. 
+ 
+```{r echo = FALSE}
+Africa <- filter(worldbank_continent, continent == 'Africa')
+Asia <- filter(worldbank_continent, continent == 'Asia')
+Europe <- filter(worldbank_continent, continent == 'Europe')
+North_America <- filter(worldbank_continent, continent == 'North America')
+Oceania <- filter(worldbank_continent, continent == 'Oceania')
+South_America <- filter(worldbank_continent, continent == 'South America')
+
+# Average GDP Per Continent
+Africa_avg_gdp <- mean(Africa$GDP, na.rm = TRUE)
+Asia_avg_gdp <- mean(Asia$GDP, na.rm = TRUE)
+Europe_avg_gdp <- mean(Europe$GDP, na.rm = TRUE)
+North_America_avg_gdp <- mean(North_America$GDP, na.rm = TRUE)
+Oceania_avg_gdp <- mean(Oceania$GDP, na.rm = TRUE)
+South_America_avg_gdp <- mean(South_America$GDP, na.rm = TRUE)
+
+Avg_GDP_Per_Continent <- data.frame(
+  Continent = c('Africa', 'Asia', 'Europe', 'North_America', 'Oceania', 'South_America'),
+  GDP_Average = c(Africa_avg_gdp, Asia_avg_gdp, Europe_avg_gdp, North_America_avg_gdp, Oceania_avg_gdp, South_America_avg_gdp))
+
+Avg_GDP_Per_Continent
+```
+ - Log GDP (Quantitative): This variable measures the growth rate for each GDP for each country. We obtain this data by first collect the GDP for each country, then apply the algorithm Log() to all the GDPs. In this process, there are few countries resulted in NA so we use !is.na to remove them. 
+```{r echo = FALSE}
+summary(log(worldbank_continent$GDP[!is.na(worldbank_continent$GDP)]))
+```
+ - Telephone Usage on Average (Quantitative): This variable measures the telephone usage for each continent. We obtain this data by first filter out the telephone usage for each continent. Then, we find the mean of telephone usage for each continent. The data is presented below. Among all six continents, North America has the highest average GDP while Africa has the least. 
+```{r echo = FALSE}
+#Ave Telephone use per continent
+Africa_ave_telep <- mean(Africa$telephone, na.rm = TRUE)
+Asia_ave_telep <- mean(Asia$telephone,na.rm = TRUE)
+Europe_avg_telep <- mean(Europe$telephone, na.rm = TRUE)
+North_America_avg_telep <- mean(North_America$telephone, na.rm = TRUE)
+Oceania_avg_telep <- mean(Oceania$telephone, na.rm = TRUE)
+South_America_avg_telep <- mean(South_America$telephone, na.rm = TRUE)
+
+Ave_telep_Per_continent <- data.frame(
+  Continent = c('Africa', 'Asia', 'Europe', 'North_America', 'Oceania', 'South_America')
+  ,Telep_ave = c(Africa_ave_telep,Asia_ave_telep,Europe_avg_telep,North_America_avg_telep
+                  ,Oceania_avg_telep,South_America_avg_telep)
+  )
+
+Ave_telep_Per_continent
+```
+  - Female Life Expectancy (Quantitative)：This variable is used to measure the expected life span of female in each country. That is how long on average would we expect a female live in this country. We filtered the life expectancy of female in 120 countries through the World Bank data table. 
+```{r echo = FALSE}
+summary(worldbank_continent$life_expectancy_female)
+```
+ - Male Life Expectancy (Quantitative): This variable is used to measure the expected life span of male in each country. That is how long on average would we expect a male live in this country. We obtain this data by filtering the life expectancy of male in 120 countries through the World Bank data table. 
+```{r echo = FALSE}
+summary(worldbank_continent$life_expectancy_male)
+```
+ - Total Life Expectancy (Quantitative): This variable is used to measure the expected life span of a human being in each country. That is how long on average would we expect a human being live in this country. We obtain this data by filtering the total life expectancy in 120 countries through the World Bank data table.
+```{r echo = FALSE}
+summary(worldbank_continent$life_expectancy_total)
+```
+ 
+ 
+ - Labor Per Capita (Quantitative): This cariable is used to measure the ratio of labor force older than 15 in a country's population. This information is obtained by dividing the labor column by the pop_total column 
+```{r echo = FALSE}
+summary(worldbank_continent$labor/worldbank_continent$pop_total )
+```
+### Exploratory Graphics
+```{r out.width= '75%', fig.align='center', echo = FALSE}
+ggplot(Avg_GDP_Per_Continent) +
+  geom_col(aes(x = Continent, y = GDP_Average), fill = "cornflowerblue") + 
+  ggtitle("Average GDP Per Continent") + 
+  ylab('GDP Average')
+```
+
+Figure 1: By Yike Chen
+
+The data shows that there are a total of 120 countries. To facilitate the compilation of the data, we attribute the countries into six categories based on their geographic locations: Africa, Asia, Europe, North America, Oceania, and South America. Figure 1 shows the average GDP values of these six continents. As can be seen from the figure, North America, Asia, Europe are among the top three, among which the average GDP of South America far exceeds the data of other continents. On the contrary, Africa’s average GDP is at the bottom of the ranking. Curious about the reason behind this considerable GDP gap, we will continue to study what are the contributing factors of GPD.
+
+```{r out.width= '75%', fig.align='center', echo = FALSE, message = FALSE, warning = FALSE}
+Colors <-
+  setNames( c('blue', 'red', 'purple','green','orange','navy','pink')
+            , levels(worldbank_continent$continent)  )
+
+
+ggplot(data = worldbank_continent)+geom_point(mapping = aes(x=country_name, y = log(GDP), color = continent), size = 2, alpha = 0.6)+theme_minimal()+theme(axis.text.x=element_blank())+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[1]), lty=2,color='blue')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[2]), lty=2,color='red')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[3]), lty=2,color='purple')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[4]), lty=2,color='green')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[5]), lty=2,color='orange')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[6]), lty=2,color='navy')+geom_abline(slope = 0, intercept = log(Avg_GDP_Per_Continent$GDP_Average[7]), lty=2,color='pink')+scale_color_manual(values = Colors)
+
+```
+
+Figure 2: By Roxie Wei
+
+GDP of all countries in the world is plotted in the Figure 2 above and colored by continent. To manifest the effect of continents on GDP, we draw reference lines of average GDP of all continents in the same plot. It is seen that North America ranks the first in terms of GDP while Africa ranks bottom, which is consistent with our expectation and Figure 1. At the same time, the average GDP of other continents, including Asia, Europe, Oceania, and South America, are close to each other. Moreover, the distribution of different countries' GDP from the same continents is evenly distributed along the average line. Therefore, we suspect that the location of a country would affect GDP. To further investigate this question, we conduct a hypothesis testing in part 3. It is noted that for simplicity, we select two samples deviates most from the average GDP of the world, including Africa and North America, to do the test. 
+
+```{r out.width= '75%', fig.align='center',echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(Ave_telep_Per_continent) +
+  geom_col(aes(x = Continent, y = Telep_ave), fill = "cornsilk",
+           col = "black") + 
+  ggtitle("Average Telephone Used Per Continent") +
+  ylab('Telephone Usage on Average')
+```
+
+Figure 3 By Jiaxuan Li
+
+Exploring whether GDP and living conditions are correlated, we draw the bar graph for average telephone used per continent. From this chart, we can see that the mobile phone usage rate in North America, Asia and Europe far exceeds that of other continents. Comparing to the Figure 1, we observe that these three continent also has the top three GDP average. Thus, we conjecture that this increment in the average telephones usage could be correlated with GDP. Being more specific, it is possible that high economic status, which is indicated by high average GDP, lead to this high telephone usage. However, it is also possible that the high usage of mobile phone lead to other factors, like easier communication when doing business or higher level of manufacture, has driven the overall economic and technological development of this continent, thereby bringing GDP to a new height. According to the 2018 global smart phone shipment statistics released by market statistics company Counterpoint, we learn the fact that the top three global mobile phone sales are Samsung, iPhone, and Huawei. All three brand originate from Asia and North America Continent, which correspond to the trend observed in the figure above. 
+
+```{r out.width=c('50%', '50%'), fig.show='hold', echo = FALSE, message = FALSE, warning = FALSE}
+female_life_exp = worldbank_continent$life_expectancy_female
+female = replicate(length(female_life_exp), "female")
+male_life_exp = worldbank_continent$life_expectancy_male
+male = replicate(length(male_life_exp), "male")
+total_life_exp = worldbank_continent$life_expectancy_total
+total = replicate(length(total_life_exp), "total")
+life_exp_data = c(female_life_exp,male_life_exp,total_life_exp)
+gender = c(female,male,total)
+life_exp_data_summary = data.frame(life_exp_data,gender)
+
+#Female vs Log GDP
+plot1 = ggplot(worldbank_continent,aes(x = life_expectancy_female, y = log(GDP)),na.rm =TRUE)+geom_point(na.rm =TRUE)+ylab("Log GDP")+xlab("Female Life Expectancy")+ggtitle("Scatter Plot of the Correlation between Female Life Expectancy and Log GDP")+ geom_smooth(method = "lm",formula = y~x,se = FALSE,na.rm =TRUE)
+plot1
+
+#Male vs Log GDP
+plot2 = ggplot(worldbank_continent,aes(x = life_expectancy_male, y = log(GDP)),na.rm =TRUE)+geom_point(na.rm =TRUE)+ylab("Log GDP")+xlab("Male Life Expectancy")+ggtitle("Scatter Plot of the Correlation between Male Life Expectancy and Log GDP")+ geom_smooth(method = "lm",formula = y~x,se = FALSE,na.rm =TRUE)
+plot2
+
+loggdp = log(worldbank_continent$GDP)
+#filter out all NA data
+mlevsgdp = filter(data.frame(male_life_exp,loggdp), is.na(loggdp) == FALSE, is.na(male_life_exp) == FALSE)
+male_life_exp = mlevsgdp$male_life_exp
+loggdp = mlevsgdp$loggdp
+lm.mlevsgdp = lm(loggdp~male_life_exp, data = mlevsgdp)
+
+loggdp = log(worldbank_continent$GDP)
+#filter out all NA data
+flevsgdp = filter(data.frame(female_life_exp,loggdp), is.na(loggdp) == FALSE, is.na(female_life_exp) == FALSE)
+female_life_exp = flevsgdp$female_life_exp
+loggdp = flevsgdp$loggdp
+lm.flevsgdp = lm(loggdp~female_life_exp, data = flevsgdp)
+
+data.frame(male_r = cor(loggdp,male_life_exp), female_r = cor(loggdp,female_life_exp))
+```
+Figure 4: By Amber Shao
+
+Figure 4 composes two linear regression models: one is for analyzing the correlation between the female life expectancy and the Log GDP in 2018; the other one is for analyzing the correlation between the male life expectancy and the Log GDP in 2018. In this analysis, all variables used are quantitative. According to the calculation presented in the Rmd file, both correlation coefficients female_r = 0.4943384 and male_r = 0.4868874 indicate pisitive correlation between the explanatory and response variables: As the life expectancy for male/female increases, on average, the log GDP increases as well; Vice versa. However, this positive correlation does not indicate any causation relationship between the two variables. Furthermore, comparing the regression analysis and the r, we observed a small difference between female and male life expectancy. Thus, we will continue explore and investigate on whether this difference is statistically significant on part 3. 
+
+```{r out.width= '75%', fig.align='center', echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(worldbank_continent,aes(x = labor/pop_total, y = log(GDP)),na.rm = TRUE)+geom_point(na.rm = TRUE)+ylab("Log GDP")+xlab("Labor per Capita")+ggtitle("Scatter Plot of the Correlation between Labor per Capita and Log GDP")+geom_smooth(method = "lm", formula = y~x, se = FALSE,na.rm = TRUE)
+
+labor = (worldbank_continent$labor)/(worldbank_continent$pop_total)
+loggdp = log(worldbank_continent$GDP)
+#filter out all NA data
+laborvsgdp = filter(data.frame(labor,loggdp), is.na(loggdp) == FALSE, is.na(labor) == FALSE)
+labor = laborvsgdp$labor
+loggdp = laborvsgdp$loggdp
+lm.laborvsgdp = lm(loggdp~labor, data = laborvsgdp)
+summary(lm.laborvsgdp)
+cor(loggdp,labor)
+```
+
+Figure 5: By Haotian Li
+
+Since we want to see whether there exists a correlation between labor per Capita and Log GDP, we decide to draw a scatter plot with a regression line to see the overall relationship. In Figure 5, we use labor per capita as the explanatory variable and the Log GDP as the response variable. As we calculated, r = 0.1991476, which is considered as a weak positive correlation between these two variables. However, this does not imply any causation between these two variables. Because r = 0.1991476 means a fairly weak correlation, we would like to conduct a hypothesis test in part 3 to discuss whether there exist such a correlation between Labor per Capita and Log GDP.
+
+### Formal Data Analysis - Contributing Factors to Log GDP
+
+#### Geography 
+Inspired by Figure 1, 2, and 3, we decide to conduct a hypothesis test on whether geography affects GDP. Here, since we focus more on the GDP averages rather than GDP growth, we would use the GDP rather than Log GDP. 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#function for calculating sd using the method we learned in class
+sd_n = function(vector){
+  n = length(vector)
+  mean = mean(vector)
+  sd = sqrt(mean((vector-mean)^2))
+  return(sd)
+}
+```
+
+*Hypothesis Test on Whether Continent Affects GDP*
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#remove null 
+log_average_gdp_no_na = log(worldbank2018$GDP[!is.na(worldbank2018$GDP)])
+log_africa_gdp_no_na = log(Africa$GDP[!is.na(Africa$GDP)])
+log_europe_gdp_no_na = log(Europe$GDP[!is.na(Europe$GDP)])
+
+se_africa = sd_n(log_africa_gdp_no_na)/length(log_africa_gdp_no_na)
+se_europe = sd_n(log_europe_gdp_no_na)/length(log_europe_gdp_no_na)
+se_continent = c(se_africa, se_europe)
+
+z_africa = (mean(log_africa_gdp_no_na) - mean(log_average_gdp_no_na))/se_africa
+z_europe = (mean(log_europe_gdp_no_na) - mean(log_average_gdp_no_na))/se_europe
+z_continent = c(z_africa, z_europe)
+
+p_value_africa = pnorm(z_africa) * 2
+p_value_europe =  (1-pnorm(z_europe))* 2
+p_continent = c(p_value_africa, p_value_europe)
+
+continents = c("Africa", "Europe")
+less_than_cl = p_continent < 0.05
+
+t.test(log_africa_gdp_no_na, mu = mean(log_average_gdp_no_na), alternative = "two.sided")
+t.test(log_europe_gdp_no_na, mu = mean(log_average_gdp_no_na), alternative = "two.sided")
+
+data.frame(continents, se_continent,z_continent, p_continent,less_than_cl)
+```
+
+Null hypothesis: Which continent a country is does not affect its GDP.$x\bar=\mu$
+
+Alternative hypothesis: Which continent a country is does not affect its GDP$x\bar≠\mu$ 
+
+predetermined confidence level: 0.05, which is 5%
+
+Then the z-score for African countries' GDP is -20.65526, which gives a p-value close to 0 using pnorm function $pnorm(-20.65526) * 2$, while the z-score for European countries' GDP is 16.83192 yielding a p-value close to 0 using pnorm function $(1-pnorm(16.83192))*2$. Noting that both p values is far less than the predetermined confidence level 0.05, we conclude that there is enough evidence for us to reject the null hypothesis in favor of the alternatives. Therefore, we think that geographic factors, like which continent a country is located, has a impact on countries' GDP growth. 
+
+#### Life Expectancy:
+
+Curious about the impact of life expectancy on Log GDP, we took a closer look at the world bank data and found an interesting fact: the data regarding life expectancy is presented in three categories, which are female, male, and total. Plotting the distributions of these three categories of data and calculating their means, we observed a noticeable difference between average males' and females' life expectancy. It is possible that this difference in average life expectancy between males and females is due to chance. Thus, to investigate whether this statement is true, we decided to perform a hypothesis test first and then conduct our regression analysis. 
+```{r out.width= '75%', fig.align='center', echo = FALSE, message = FALSE, warning = FALSE}
+boxplot(formula = life_exp_data ~ gender, data = life_exp_data_summary,
+        ylab = "Life Expectancy (year)",
+        main = "Box plots of Average Life Expectancy for Different Gender", 
+        xlab = "Gender",
+        col = c("darkslategray4", "coral","cornsilk" ))
+```
+*Hypothesis Test on the difference between Male and Female Life Expectancy*
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#data preparation 
+female_life_exp = worldbank_continent$life_expectancy_female
+male_life_exp = worldbank_continent$life_expectancy_male
+mean_f = mean(female_life_exp)
+mean_m = mean(male_life_exp)
+Mean = c(mean_f,mean_m)
+
+sd_f = sd_n(female_life_exp)
+sd_m = sd_n(male_life_exp)
+SD = c(sd_f,sd_m)
+
+se_f = sd_f/sqrt(length(female_life_exp))
+se_m = sd_m/sqrt(length(male_life_exp))
+SE = c(se_f,se_m)
+
+Gender = c("female", "male")
+
+data.frame(Gender,Mean,SD,SE)
+```
+
+This is an two-sided, two sample, z-test for difference between means
+
+ - H0: There is no statistical significant difference between average female and males' life expectancy. That means, the difference in average life expectancy observed is due to chance. That is, X_bar_female = X_bar_male. 
+ - H1: There is a statistical significant difference between average females' and males' life expectancy. That means, the difference in average life expectancy observed is not due to chance. That is, X_bar_female ≠ X_bar_male. 
+ - predetermined confidence level:5%, which is 0.05
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#two sample z-test
+se = sqrt(se_f^2 + se_m^2)
+observed_diff = mean_f - mean_m
+expected_diff = 0
+z = (observed_diff-expected_diff) / se
+p_value = 2*(1-pnorm(z))
+data.frame(se,z,p_value)
+```
+
+From the computation above, we obtain this extremely low p-value 3.598995e-07, which is approximately 0. Since it is lower than the predetermined confidence level 0.05, there is enough evidence to reject the null hypothesis in favor of the alternatives. This rejection of the null hypothesis means that it is highly likely that the difference between average life expectancy in male and female cannot be explained by chance variation. And from the box plot drawn above, it is reasonable to infer that female has longer life expectancy than male. Therefore, using either variable to conduct the regression analysis is unfair. Thus, in order to better analyze the correlation between life expectancy and Log GDP, we decided to use the life_expectancy_total column as our index for life expectancy. 
+
+*Regression Analysis: *
+
+drawing out the data and conducting the regression analysis, we found a positive correlation between the total life expectancy and Log GDP for these countries. r = 0.493734 suggests a comparatively strong association between the total life expectancy and the Log GDP. Being more specific, as the total life expectancy increases, the log GDP on average increases as well. However, since r will not change if we switch the explanatory and response variable, another possible interpretation of this positive correlation is as the Log GDP increases, on average, the total life expectancy increase as well. Similar to the analysis done to figure 2, this positive correlation does not imply any causal relationship between these two variable. 
+```{r out.width= '75%', fig.align='center', echo = FALSE, message = FALSE, warning = FALSE}
+plot = ggplot(worldbank_continent,aes(x = life_expectancy_total, y = log(GDP)),na.rm =TRUE)+geom_point(na.rm =TRUE)+ylab("GDP ")+xlab("Life Expectancy")+ggtitle("Scatter Plot of the Correlation between Life Expectancy and GDP Per Capita")+ geom_smooth(method = "lm",formula = y~x,se = FALSE,na.rm =TRUE)
+plot
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+x = worldbank_continent$life_expectancy_total
+y = worldbank_continent$GDP
+#filter out all NA data
+a = filter(data.frame(x,y = log(y)), is.na(y) == FALSE)
+x = a$x
+y = a$y
+lm.lifevsgdp = lm(y~x, data = a)
+summary(lm.lifevsgdp)
+```
+
+```{r out.width= '75%', fig.align='center', echo = FALSE, message = FALSE, warning = FALSE}
+cor.test(x,y)
+
+res.lifevsgdp = lm.lifevsgdp$residuals
+ggplot() + geom_point(aes(x = a$x, y = res.lifevsgdp))+ylab("Residual")+xlab("Total Life Expectancy")+ggtitle("Residual Plot of Total Life Expectancy vs. Log(GDP)")+geom_abline(slope=0,intercept = 0,color='red')
+```
+
+Drawing out the residual plot, we observed that the residual plots distribute randomly and do not display any obvious pattern. Therefore, we conclude that a linear regression model is appropriate. Thus, we could use the formula y_hat = m_hat * xi + b_hat learned in class to estimate the parameter y_hat, the expected Log GDP for certain total life expectancy. Being more specific, that is log GDP = 16.128 + (0.1265 * life expectancy total)
+
+*Parameter Prediction: *
+
+The following chart is the predicted y_hat using the linear regression model. 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+lm(y~x)
+
+#Parameter Estimation Function: y_hat = m_hat * xi + b_hat
+y_hat_estimation = function(x_vector, y_vector, xi){
+  r = cor(x_vector, y_vector)
+  m_hat = r * sd_n(y_vector) / sd_n(x_vector)
+  b_hat = mean(y_vector) - (m_hat * mean(x_vector))
+  result = m_hat*xi + b_hat
+  return(result)
+}
+input = seq(60,80, by = 5)
+result = c()
+for (i in input) {
+  output = y_hat_estimation(x,y,i)
+  result = c(result, output)
+}
+data.frame(life_expectancy_total = input, predicted_log_GDP = result)
+```
+
+#### Labor Per Capita: 
+
+*Hypothesis Test: *
+Since the correlation coefficient appears to show a weak correlation, we wonder whether this correlation really exist. Therefore, we would like to conduct a hypothesis test on the coefficient. 
+
+ - Null Hypothesis(H0): There is no correlation between the labor per Capita and the Log GDP. The correlation observed is purely due to chance. 
+ - Alternative Hypothesis(H1): There is a correlation between the labor per Capita and the Log GDP.
+ - Predetermined confidence level = 5%, which is 0.05. 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+lm.laborvsgdp = lm(loggdp~labor, data = laborvsgdp)
+summary(lm.laborvsgdp)$coefficients
+```
+
+According to the computation above, we can see that the t = 2.150659 and p_value = 3.365283e-02. Since the p_value is less than the predetermined confidence level 0.05, there is enough evidence to reject the null hypothesis in favor of the alternatives. This rejection of the null hypothesis means that even though r = 0.1991476 represents a fairly weak correlation, this positive correlation between the labor per capita and the log GDP is not due to chance. Therefore, we can further conduct the regression analysis and parameter prediction.
+
+*Regression Analysis:*
+```{r out.width= c('50%','50%'), fig.show='hold', echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(worldbank_continent,aes(x = labor/pop_total, y = log(GDP)),na.rm = TRUE)+geom_point(na.rm = TRUE)+ylab("Log GDP")+xlab("Labor per Capita")+ggtitle("Scatter Plot of the Correlation between Labor per Capita and Log GDP")+geom_smooth(method = "lm", formula = y~x, se = FALSE,na.rm = TRUE)
+
+cor.test(laborvsgdp$labor,laborvsgdp$loggdp)
+
+res.laborvsgdp = lm.laborvsgdp$residuals
+ggplot() + geom_point(aes(x = laborvsgdp$labor, y = res.laborvsgdp))+ylab("Residual")+xlab("Labor per Capita")+ggtitle("Residual Plot of Labor per Capita vs. Log(GDP)")+geom_abline(slope=0,intercept = 0,color='red')
+```
+
+Looking at the residual plot, we find that the the residual plots distribute randomly in a oval shape. This indicates that the regression analysis could be a good model. Thus, we would like to construct the parameter predictor. That is Log(GDP) = 23.510 + (4.307 * Labor per Capita)
+
+*Parameter Prediction: *
+
+The following chart is the predicted log GDP using the linear regression model. 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+lm(laborvsgdp$loggdp~laborvsgdp$labor)
+
+#Parameter Estimation Function: y_hat = m_hat * xi + b_hat
+y_hat_estimation = function(x_vector, y_vector, xi){
+  r = cor(x_vector, y_vector)
+  m_hat = r * sd_n(y_vector) / sd_n(x_vector)
+  b_hat = mean(y_vector) - (m_hat * mean(x_vector))
+  result = m_hat*xi + b_hat
+  return(result)
+}
+input = seq(0.3,0.6, by = 0.05)
+result = c()
+for (i in input) {
+  output = y_hat_estimation(laborvsgdp$labor,laborvsgdp$loggdp,i)
+  result = c(result, output)
+}
+data.frame(Labor_per_Capita = input, predicted_log_GDP = result)
+```
+
+### Conclusion 
+
+Starting from exploring the provided dataset, we eventually narrow down our target contributing factors to GDP growth to three categories: location, the number of laborers, and life expectancy of the population. We think that where a country is located may impact its GDP growth rate from our initial data exploration. To testify our hypothesis, we conduct a hypothesis test that results in rejecting the null hypothesis in favor of the alternative that the location of a country has an impact on its GDP. Built upon this conclusion, we guess that the difference in natural resources may explain this difference. For example, According to Diane Boudreau's article on introducing the natural resources of North America, North America benefits greatly from its fertile soils, plentiful fresh water, oil and mineral deposits, and forests." All these factors mentioned in the article may explain why North America has the highest GDP in 2018, as illustrated in figure 1. 
+
+Verified the first factors, we move on to other quantitative variables: the labor per capita and total life expectancy. The hypothesis test we conducted verifies that the correlation coefficient r = 0.1991476 is statistically significant for labor per capita. Then, we explore the regression analysis and construct a parameter prediction mechanism to predict the GDP growth given labor per capita. Addressing the positiveness of the coefficient, we hypothesize that promoting more people in the population to work (increase the labor per capita) may positively impact a country's GDP growth rate. Of course, the recommendation's uncertainty comes from the fact that there should not be any causal relationship drawn from a correlation coefficient.   
+
+For life expectancy, we first discover through hypothesis test that there is a difference between females' and males' life expectancy. Therefore, we decide to use total life expectancy as the explanatory variable to conduct the regression analysis. Finding out r = 0.493734, we also explore the regression analysis by drawing out the residual plot and construct a parameter predictor for finding the GDP growth given total life expectancy. Based on this reasonably strong coefficient, we also hypothesize that the high GDP growth may allow countries to invest more and improve their living condition such as health care system, public infrastructure, and environment, which all contribute to a high life expectancy.
+
+Even though we obtained several conclusions from our data analysis and exploration, some drawbacks may impact the research's accuracy. One limit would be the absence of data. During the research, we need to remove some N/A data resulted from computation in almost every step. This may result in some extent of data loss, especially those influential points. However, since regression analysis is particularly susceptible to those influential points, the absence of such points may drastically change the results. Another constraint we met is the lack of analysis models. For example, when exploring data, we found an exponential relationship between certain two variables. However, unknowing the specific analyzing method for an exponential relationship, we have to focus on other aspects. All these limitations, along with those interesting hypotheses resulting from our data analysis, motivate us to explore data and statistics.  
+
+
+### Reference:
+
+Boudreau, Diane Boudreau, et al. “North America: Resources.” National Geographic Society, 9 Oct. 2012, www.nationalgeographic.org/encyclopedia/north-america-resources/. 
+
+Callen, Tim. “Finance &amp; Development.” Finance &amp; Development | F&amp;D, 24 Feb. 2020, www.imf.org/external/pubs/ft/fandd/basics/gdp.htm. 
+
+Team Counterpoint. “Global Smartphone Market Share: By Quarter.” Counterpoint Research, 24 Nov. 2020, www.counterpointresearch.com/global-smartphone-share/. 
+
+“UNSD - Methodology.” United Nations, United Nations, unstats.un.org/unsd/methodology/m49/. 
+
+
+
+
+
