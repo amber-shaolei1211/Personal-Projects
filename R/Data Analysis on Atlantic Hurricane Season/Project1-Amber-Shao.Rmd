@@ -1,0 +1,212 @@
+---
+title: "Project 1"
+author: "Amber Shao"
+date: "2/22/2022"
+output: html_document
+---
+## A) Data IBTrACS
+
+### A.1) Recommended R Packages
+
+```{r, message=FALSE, warning=FALSE}
+# load packages 
+library(tidyverse) # includes dplyr, ggplot2 and other pkgs 
+library(lubridate) # for working with dates
+library(gganimate) # for animated graphs (and maps)
+library(maps)     # for drawing basic geographical maps
+library(gifski)
+```
+
+### A.2) Importing Data in R
+
+```{r}
+#construct column names and column type
+col_names <- c('SID','SEASON','NUMBER','BASIN','SUBBASIN','NAME','ISO_TIME','NATURE','LAT','LON','WMO_WIND',	'WMO_PRES','WMO_AGENCY','TRACK_TYPE','DIST2LAND','LANDFALL', rep('NULL', 147)) 
+col_types <- c('character','integer','integer','character','character','character','character','character','double','double','integer','integer','character','character','integer','integer', rep('NULL', 147))
+
+dat = read.table(file = "ibtracs.NA.list.v04r00.csv", sep = ",", col.names = col_names, stringsAsFactors = FALSE, skip = 77877, colClasses = col_types, na.strings = " ")
+```
+
+### A.3) Adding a MONTH column
+
+```{r}
+# add the MONTH column 
+dat$ISO_TIME = as.POSIXct(dat$ISO_TIME)
+dat$MONTH <- lubridate::month(dat$ISO_TIME)
+
+# display structure of your data with this command 
+str(dat, vec.len = 1)
+```
+
+## C) Main Analysis
+
+### C1) Atlantic Hurricane Season
+Consider the following claims listed below (C1.a - C1.f). For each claim, write R code that provides output that allows you to directly address each claim, determining which parts are true or false. In addition to your R code, include a sound description and interpretation.
+
+#### C1.a) 
+The 2020 Atlantic hurricane season featured a total of 31 tropical cyclones, all but one of which became a named storm. As expected, none of the tropical cyclones formed pre-season.
+
+- First, we filter SEASON == 2020 and (NATURE == 'TS' | NATURE == 'SS') to find tropical cyclones that formed in 2020 hurricane season. We named the filtered data "tropical_2020". By finding the length of unique values in the SID column, we observe that there are 31 tropical cyclones formed in within the season. Therefore, the first part of the statement is true. 
+- By filtering NAME != "NOT_NAMED" and find the length of the unique value of the name column, we find that among all 31 tropical cyclones, 30 of them are named. Therefore, the second part of this statement is true. Indeed, all but one of which became a named storm. 
+- However, when we filter SEASON == 2020, (NATURE == 'TS' | NATURE == 'SS'), and MONTH < 6, which is the start of hurricane season (June to November), we find that there are two hurricanes, "ARTHUR" and "BERTHA, formed pre-season. This means that the last part of this statement is false.   
+
+```{r}
+#filter 2020 Atlantic hurricane season
+tropical_2020 = dat%>%filter(SEASON == 2020 & (NATURE == 'TS' | NATURE == 'SS'))
+#number of tropical cyclones formed within the 2020 Atlantic hurricane season
+length(unique(tropical_2020$SID))
+
+#number of named cyclones
+length(unique(filter(tropical_2020, NAME != "NOT_NAMED")$NAME))
+
+#if there is no hurricane formed pre-season, this list should be empty
+unique(filter(tropical_2020, MONTH < 6)$NAME) 
+
+#verify that ARTHUR and BERTHA starts before June
+c(unique((dat %>% filter(SEASON == 2020 & NAME == "ARTHUR"))$MONTH),
+  unique((dat %>% filter(SEASON == 2020 & NAME == "BERTHA"))$MONTH))
+```
+
+#### C1.b) 
+Of the named storms in the 2020 Atlantic hurricane season, seven of the hurricanes intensified into major hurricanes although none of them reached Category 5 status.
+
+- Since this questions asks for named storms in the 2020 Atlantic hurricane season, we first need to filter dat with conditions SEASON == 2020 and NAME != "NOT_NAMED" to get the targeted hurricane lists. Then, From the lecture, we know that major hurricanes are defined as hurricanes that reached category 3, which has sustained wind speed of 96-112 knots. Therefore, to examine the number of hurricanes intensified into category 3, we can filter out hurricanes with WMO_WIND >= 96, get the unique name list, and use length() to see how many hurricanes are contained within this list. After verification, we confirm that 7 hurricanes reach category 3, identified as major hurricanes. Therefore, the first part of this statement is true. 
+- For the second half of this sentence, we follow the same logic. We first filter hurricanes with sustained wind speed greater than 137, get the unique name list, and use length() to see how many hurricanes are contained. The code below shows that no hurricane has sustained wind speed greater than 137 knots. Therefore, we verify that this statement is true as well. 
+
+```{r}
+named_hurrican_season_2020 = dat%>%filter(SEASON == 2020 & NAME != "NOT_NAMED")
+
+#number of hurricanes intensified into major hurricanes during the 2020 Atlantic hurricane season
+length(unique((named_hurrican_season_2020 %>% filter(WMO_WIND >= 96))$NAME)) 
+
+#number of hurricanes intensified into category 5 status during the 2020 Atlantic hurricane season
+length(unique((named_hurrican_season_2020 %>% filter(WMO_WIND >= 137))$NAME))
+```
+
+#### C1.c) 
+The 2010 Atlantic hurricane season had 19 named storms. Despite this above average activity, not one hurricane hit the United States.
+
+- From lecture, we know that storms are defined as cyclones with sustained wind speed below 64 knots. Therefore, filtering dat with SEASON == 2010, NAME != "NOT_NAMED", and WMO_WIND < 64, we name the filtered dataframe storms_2010 and get the amount of uniquely named storms in 2010, which is 19. Therefore, the first sentence is true. 
+- Counting unique named storms each year and finding the average, we observe that the average storm occurrence is 12 times per year. Therefore, this 19 times occurrence of storms in 2010 is indeed above average activity. Therefore, the second part of this statement is true. 
+- Searching for the latitude for the northernmost and southernmost locations in the US, we get the latitude range from 25 to 49. Similarly, searching for the longitude for the westernmost and easternmost locations in the US, we get the longitude range from -124 to -67. Then, Using these data along with the filtering condition for hurricane WMO_WIND >= 64, we find 0 hurricane hit the US that year. Therefore, the statement is true.  
+
+```{r}
+#filter named storms within the 2010 Atlantic hurricane season
+storms_2010 = dat%>%filter(SEASON == 2010 & NAME != "NOT_NAMED" & WMO_WIND < 64)
+
+#number of uniquely named storms 
+length(unique(storms_2010$NAME))
+
+#rounded average storms per year
+round(mean((dat %>% filter(NAME != "NOT_NAMED" & WMO_WIND < 64) %>% group_by(SEASON) %>% distinct(NAME) %>% 
+        select(SEASON) %>% count(SEASON))$n))
+
+#number of hurricanes that hit the US
+length((dat %>% filter(SEASON == 2010 & NAME != "NOT_NAMED" & WMO_WIND >= 64 & LAT %in% c(25:49) & LON %in% c(-124:-67)))$NAME)
+```
+
+#### C1.d) 
+The 2005 Atlantic hurricane season featured a total of 27 named storms, seven of which became major hurricanes, making this the season with the most number of major hurricanes during the period 1970-2020.
+
+- Filtering hurricanes with SEASON == 2005 and NAME != "NOT_NAMED", we name the filtered dataframe hurricane_2005 and find that there are 27 uniquely named storms in 2005 hurricane season. Therefore, the first part of this statement is true.
+- Since we know a major hurricane means reaching category 3, which has a sustained wind speed of at least 96 knots, we can filter out hurricanes with WMO_WIND >= 96, get the unique name list, and use length() to see how many hurricanes are contained within this list. We verify that there were 7 major hurricanes in the 2005 hurricane season. Therefore, the second part of this statement is true. 
+- Counting all major hurricanes during the period 1970-2020, we find that 2005 does contain the most number of major hurricanes, which means the third part of this statement is true. However, the resulting dataframe below suggests that 2020 also has 7 major hurricanes. Therefore, we should rephrase this sentence as "making this one of the seasons with the most number of major hurricanes during 1970-2020". 
+
+```{r}
+#named cyclones formed within the 2005 Atlantic hurricane season
+hurricane_2005 = dat%>%filter(SEASON == 2005 & NAME != "NOT_NAMED")
+
+#number of named storms within the 2005 Atlantic hurricane season
+length(unique((hurricane_2005%>%filter(WMO_WIND < 64))$NAME))
+
+#number of named major hurricanes within the 2005 Atlantic hurricane season
+length(unique((hurricane_2005 %>% filter(WMO_WIND >= 96))$NAME)) 
+
+#arrange season in descending order of major hurricanes each season
+dat %>% filter(WMO_WIND >= 96) %>% group_by(SEASON) %>% distinct(NAME) %>% 
+  select(SEASON) %>% count(SEASON) %>% arrange(desc(n)) %>% head(5)
+```
+
+#### C1.e) 
+In the period from 1970 to 2020, the 2020 Atlantic hurricane season was the most active on record. By “active” we mean the season with the most tropical cyclones.
+
+- By filtering (NATURE == 'TS' | NATURE == 'SS'), we create a dataframe called the tropical_cyclones_in_season which contains all tropical/subtropical cyclones formed in hurricane season from 1970 to 2020. Then, by counting the number of unique hurricanes formed each year and sorting them in descending order, we find that year 2020 is the first row and has 31 tropical hurricanes formed during the season. Therefore, we verify that the 2020 Atlantic hurricane season was the most active on record, with most tropical cyclones formed. Therefore, this statement is true. 
+
+```{r}
+#all tropical cyclones in Atlantic hurricane seasons
+tropical_cyclones_in_season = dat %>% filter(NATURE == 'TS' | NATURE == 'SS')
+
+#arrange season in descending order of the number of tropical cyclones each season
+tropical_cyclones_in_season %>% group_by(SEASON) %>% distinct(NAME) %>% 
+  select(SEASON) %>% count(SEASON) %>% arrange(desc(n)) %>% head(5)
+```
+
+#### C1.f) 
+In the 2020 Atlantic hurricane season, 14 storms intensified into hurricanes, making this season the one with the most number of hurricanes during the period 1970 to 2020.
+
+- From the lecture, we know that storms are defined as cyclones with sustained wind speeds from 34 to 63 knots. On the other hand, Hurricanes are cyclones with sustained wind speed 64 knots or greater. Therefore, by filtering WMO_WIND >= 64, we have a dataframe with all hurricanes formed for each hurricane seasons in 1970-2020. Then, by counting the number of unique hurricanes formed each year and sorting them in descending order, we find that 2005 has 15 storms storms intensified into hurricanes while 2020 only has 14. Therefore, the first part of this statement is true, but the second part is false.To be more specific, in the 2020 Atlantic hurricane season, there are indeed 14 storms intensified into hurricanes. However, because 2015 has 15 storms intensified into hurricanes, the 2020 Atlantic hurricane season doesn't have the most number of hurricanes during the period 1970 to 2020. 
+
+```{r}
+#arrange season in descending order of numbers of hurricanes each season
+dat %>% filter(WMO_WIND >= 64) %>% group_by(SEASON) %>% distinct(NAME) %>%
+  select(SEASON) %>% count(SEASON) %>% arrange(desc(n)) %>% head(5)
+```
+
+### C.2) Animated Map
+Make an animated map of storms in 2020, to display their paths (or trajectories). And don’t forget to provide a sound description and interpretation for this visual display.
+
+- Since the instruction asks for an animated map of storms in season 2020, we first filter SEASON == 2020 and WMO_WIND < 64 to get the targeted dataframe of storms in 2020. Then, to display its animated trajectories, we need to plot a scatter plot with all locations arrived by each storm on a map, with longitude and latitude as the x and y coordinate. Then, we can use ISO_TIME as the parameter for transition_time to make each trajectory move along time. 
+- Since ISO_TIME includes very detailed time data that is even accurate to the seconds, when we use it as the input for transition_time, the graph moves pretty fast and presents unclear trajectories. Therefore, I add another command animate(), decreasing the default frame rate of 24 fps to 3 fps. The gif moves slower, rendering more time for readers to observe and understand the trajectories of each storm. 
+
+```{r}
+storms_2020 = dat%>%filter(SEASON == 2020 & WMO_WIND < 64)
+
+world_map <- map_data("world")
+gg_world <- ggplot() + geom_polygon(data = world_map, 
+               aes(x = long, y = lat, group = group), 
+               fill = "gray95", colour = "gray70", size = 0.2) + theme_bw()
+
+animated_plot = gg_world + geom_point(data = storms_2020, aes(x = LON, y = LAT, color = NAME, size = WMO_WIND),
+                                      alpha = 0.3) + 
+                           xlim(c(-150, 10)) + 
+                           ylim(c(0, 90)) + 
+                           labs(title = "Animated Map: Paths of Storms in Season 2020", subtitle = "Time: 
+                                {frame_time}",  x = 'longitude', y = "latitude") + 
+                           transition_states(storms_2020, transition_length = 2, state_length = 1) + 
+                           transition_time(storms_2020$ISO_TIME) + shadow_wake(.3) + ease_aes('linear')
+
+animate(animated_plot, fps=3)
+```
+
+```{r}
+a = seq(5,100,5)
+c = 65000 * a/100
+log(a*100000/c + 1)/log(1+a)
+```
+
+
+```{r}
+table = function(income, target, age, rate){
+  rates = seq(5,rate,1)/100
+  annual_contribute = 65000 * rates
+  years_required = log(rates*target/annual_contribute + 1) / log(1+rates)
+  final_age = age+years_required
+  total_contribution = annual_contribute*years_required
+  total_growth = target - total_contribution
+  dat = data.frame(rates, annual_contribute, years_required, final_age,total_contribution,total_growth)
+  return(dat)
+}
+
+dat = table(65000, 1000000, 25, 7)
+dat
+```
+```{r}
+rates = rep(dat$rates, 2)
+data = c(dat$total_contribution,dat$total_growth)
+label = c(rep("contribution",3),rep("growth",3))
+dat2 = data.frame(rates, data, label)
+
+ggplot(data = dat2, aes(x = rates, y = data, fill = label)) + geom_bar(stat="identity", position=position_dodge())
+```
+
+
